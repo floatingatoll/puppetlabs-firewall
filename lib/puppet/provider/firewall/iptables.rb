@@ -1,5 +1,6 @@
 require 'puppet/provider/firewall'
 require 'digest/md5'
+require 'open3'
 
 Puppet::Type.type(:firewall).provide :iptables, :parent => Puppet::Provider::Firewall do
   include Puppet::Util::Firewall
@@ -89,9 +90,24 @@ Puppet::Type.type(:firewall).provide :iptables, :parent => Puppet::Provider::Fir
     iptables update_args
   end
 
+  def shellsplit(line)
+    words = []
+    field = ''
+    line.scan(/\G\s*(?>([^\s\\\'\"]+)|'([^\']*)'|"((?:[^\"\\]|\\.)*)"|(\\.?)|(\S))(\s|\z)?/m) do
+      |word, sq, dq, esc, garbage, sep|
+      raise ArgumentError, "Unmatched double quote: #{line.inspect}" if garbage
+      field << (word || sq || (dq || esc).gsub(/\\(.)/, '\\1'))
+      if sep
+        words << field
+        field = ''
+      end
+    end
+    words
+  end
+
   def delete
     debug 'Deleting rule %s' % resource[:name]
-    iptables delete_args
+    iptables(delete_args)
   end
 
   def exists?
@@ -231,7 +247,47 @@ Puppet::Type.type(:firewall).provide :iptables, :parent => Puppet::Provider::Fir
 
   def delete_args
     count = []
-    line = properties[:line].gsub(/\-A/, '-D').split
+    line = properties[:line].gsub(/\-A/, '-D')
+    line = line.split
+    tmp_line = line
+    counter = 0
+    found_comment_start = false
+    found_comment_end = false
+    set_comment_start = false
+    set_comment_end = false
+        
+    end_of_comment_hash = {
+      :module_start => '-m',
+      :table_start => '-t',
+      :destination_start => '-d',
+      :iniface_start => '-i',
+      :jump_start => '-j',
+      :outiniface_start => '-o',
+      :proto_start => '-p',
+      :source_start => '-s',
+      :table_start => '-t'
+    }
+
+    tmp_line.each do |line_segment|
+            if found_comment_start and line_segment=~ /^"/
+                found_comment_start = false
+            end
+      if found_comment_start and not set_comment_start and not line_segment=~ /^"/
+                line[counter] = '"' + line[counter]
+                set_comment_start = true
+            end
+            if line_segment == '--comment'
+                found_comment_start = true
+              found_comment_index = counter
+            end
+            if found_comment_start and not found_comment_end \
+                          and set_comment_start \
+                          and line_segment=~ /^-/
+                line[counter - 1] = line[counter - 1] + '"'
+                found_comment_end = true
+            end
+            counter += 1
+    end
 
     # Grab all comment indices
     line.each do |v|
@@ -240,20 +296,20 @@ Puppet::Type.type(:firewall).provide :iptables, :parent => Puppet::Provider::Fir
       end
     end
 
-    if ! count.empty?
-      # Remove quotes and set first comment index to full string
-      line[count.first] = line[count.first..count.last].join(' ').gsub(/"/, '')
+    #if ! count.empty?
+    #  # Remove quotes and set first comment index to full string
+    #  line[count.first] = line[count.first..count.last].join(' ').gsub(/"/, '')
 
-      # Make all remaining comment indices nil
-      ((count.first + 1)..count.last).each do |i|
-        line[i] = nil
-      end
-    end
+    #  # Make all remaining comment indices nil
+    #  ((count.first + 1)..count.last).each do |i|
+    #    line[i] = nil
+    #  end
+    #end
 
     line.unshift("-t", properties[:table])
+  
+    shellsplit(line.join(' '))
 
-    # Return array without nils
-    line.compact
   end
 
   def general_args
@@ -328,3 +384,4 @@ Puppet::Type.type(:firewall).provide :iptables, :parent => Puppet::Provider::Fir
     rules.sort.index(my_rule) + 1
   end
 end
+
