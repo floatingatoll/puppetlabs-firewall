@@ -1,0 +1,28 @@
+remove c730028192 in favor of upstream Ubuntu support
+
+squash e1329ce556 + c5cd3ce8f3 into one commit, submit as patch vs. 960f4300479c835100a84ac53c5265075816032a
+
+remove 2c539fa2cf in favor of upstream puppet 3.x support
+
+remove 37a48c2a54 in favor of upstream GH-128 fix
+
+
+squash b0b6e99d6c + c61826cc46 + ff1b020650 + 4098f7dfba, submit as test patch for upstream
+
+
+split 0df210e687, submit tests upstream, review iptables.rb fix vs. upstream ip6tables
+
+
+split 8cc79cdb89, squash a9c04e6e16 and submit tests upstream, review rules-without-table fix vs. upstream
+
+
+split 4b2566be11, replace --pkt-type fix with re-merge from kang, review firewall_spec should/to fix, discard sport_udp change
+
+
+remove 289c9efd96, use ~/.gitignore and git config --global core.excludesfile ~/.gitignore
+
+
+remove 0f23963465 in favor of upstream addrtype fixes in f7f1c035f2538a6487e1684614062177f334ef4e
+
+
+review https://github.com/puppetlabs/puppetlabs-firewall/issues/251
