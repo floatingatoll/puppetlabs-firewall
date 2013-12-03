@@ -1,0 +1,13 @@
+squash 9a249d4e39 + 40582ecb8d + e1ace897b8 + 6eed1da1e3 into one commit
+
+remove 92f820947f in favor of upstream 9999-style fixes
+
+squash b5b398a0db into 6d228f13d5 and remerge
+
+squash e74aa05c42 into 1b91facf75 temporarily, but then remove it in favor of upstream
+
+remove 92b3b8c8b2 for now, may be artifact of sport/dport impl testing ('tcp' is not a valid src or dst)
+
+remove 1f84307b3c for now, seems to be fixed upstream along with 92f8 above
+
+remove 565b78b8cc in favor of upstream nf_conntrack
